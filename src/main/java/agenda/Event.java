@@ -2,6 +2,8 @@ package agenda;
 
 import java.time.*;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Event {
 
@@ -9,23 +11,26 @@ public class Event {
      * The myTitle of this event
      */
     private String myTitle;
-    
+
     /**
      * The starting time of the event
      */
     private LocalDateTime myStart;
 
     /**
-     * The durarion of the event 
+     * The durarion of the event
      */
     private Duration myDuration;
+
+    private Repetition repetition;
+    private List<LocalDate> exceptions = new ArrayList<>();
 
 
     /**
      * Constructs an event
      *
-     * @param title the title of this event
-     * @param start the start time of this event
+     * @param title    the title of this event
+     * @param start    the start time of this event
      * @param duration the duration of this event
      */
     public Event(String title, LocalDateTime start, Duration duration) {
@@ -35,33 +40,45 @@ public class Event {
     }
 
     public void setRepetition(ChronoUnit frequency) {
-        // TODO : implémenter cette méthode
-        throw new UnsupportedOperationException("Pas encore implémenté");
+        this.repetition = new Repetition(frequency);
     }
 
     public void addException(LocalDate date) {
-        // TODO : implémenter cette méthode
-        throw new UnsupportedOperationException("Pas encore implémenté");
+        if (repetition != null) {
+            repetition.addException(date);
+        } else {
+            throw new IllegalStateException("Cet évènement n'a pas de répétitions définies.");
+        }
     }
 
     public void setTermination(LocalDate terminationInclusive) {
-        // TODO : implémenter cette méthode
-        throw new UnsupportedOperationException("Pas encore implémenté");
+        if (repetition != null) {
+            repetition.setTermination(new Termination(myStart.toLocalDate(), repetition.getFrequency(), terminationInclusive));
+        } else {
+            throw new IllegalStateException("Cet évènement n'a pas de répétitions définies.");
+        }
     }
 
     public void setTermination(long numberOfOccurrences) {
-        // TODO : implémenter cette méthode
-        throw new UnsupportedOperationException("Pas encore implémenté");
+        if (repetition != null) {
+            repetition.setTermination(new Termination(myStart.toLocalDate(), repetition.getFrequency(), numberOfOccurrences));
+        } else {
+            throw new IllegalStateException("Cet évènement n'a pas de répétitions définies.");
+        }
     }
 
     public int getNumberOfOccurrences() {
-        // TODO : implémenter cette méthode
-        throw new UnsupportedOperationException("Pas encore implémenté");
+        if (repetition != null) {
+            return (int) repetition.getTermination().numberOfOccurrences();
+        }
+        throw new IllegalStateException("Cet évènement n'a pas de répétitions définies.");
     }
 
     public LocalDate getTerminationDate() {
-        // TODO : implémenter cette méthode
-        throw new UnsupportedOperationException("Pas encore implémenté");
+        if (repetition != null) {
+            return repetition.getTermination().terminationDateInclusive();
+        }
+        throw new IllegalStateException("Cet évènement n'a pas de répétitions définies.");
     }
 
     /**
@@ -71,16 +88,34 @@ public class Event {
      * @return true if the event occurs on that day, false otherwise
      */
     public boolean isInDay(LocalDate aDay) {
-        // TODO : implémenter cette méthode
-        throw new UnsupportedOperationException("Pas encore implémenté");
+        LocalDate startDate = myStart.toLocalDate();
+        LocalDate endDate = myStart.plus(myDuration).toLocalDate();
+
+        if ((aDay.isEqual(startDate) || aDay.isAfter(startDate)) && (aDay.isBefore(endDate) || aDay.isEqual(endDate))) {
+            return true;
+        }
+
+        if (repetition != null) {
+            return repetition.isInDay(aDay, myStart.toLocalDate(), exceptions);
+        }
+
+        return false;
     }
-   
+
     /**
      * @return the myTitle
      */
     public String getTitle() {
         return myTitle;
     }
+
+    /**
+     * @return the myDuration
+     */
+    public Duration getDuration() {
+        return myDuration;
+    }
+
 
     /**
      * @return the myStart
@@ -90,12 +125,6 @@ public class Event {
     }
 
 
-    /**
-     * @return the myDuration
-     */
-    public Duration getDuration() {
-        return myDuration;
-    }
 
     @Override
     public String toString() {
